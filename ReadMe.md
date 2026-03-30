@@ -16,8 +16,7 @@ This repository contains solutions for the **ML4SCI Genie GSoC 2026** evaluation
 |------|-------------|-------|-----------|
 | **Common Task 1** | Convolutional Auto-Encoder for jet image compression | 3×125×125 → 256-dim bottleneck | MSE ~0.00001 (converges epoch 2) |
 | **Common Task 2** | Graph Neural Network (GNN) classifier | Dynamic DGCNN (k=16, 3 layers) | **AUC ≈ 0.76–0.80** (validation) |
-| **Specific Task 3** | Diffusion Model for generative modeling | DDPM U-Net (1000 timesteps) | MSE: 0.0045±0.0023, SSIM: 0.852±0.039 |
-| **Specific Task 4** | Non-local GNN comparison | TransformerConv + Virtual Node | **AUC ≈ 0.80–0.84** (non-local outperforms local) |
+| **Specific Task 3** | Non-local GNN comparison | TransformerConv + Virtual Node | **AUC ≈ 0.80–0.84** (non-local outperforms local) |
 
 ---
 
@@ -27,8 +26,8 @@ This repository contains solutions for the **ML4SCI Genie GSoC 2026** evaluation
 genie/
 ├── ReadMe.md                          # This file
 ├── notebooks/
-│   ├── ML4SCI_Genie_GSoC_2026.ipynb  # Tasks 1–3 (AE, DGCNN, DDPM)
-│   ├── ML4SCI_Task4_NonLocal_GNN.ipynb # Task 4 (Non-local vs Local GNN)
+│   ├── ML4SCI_Genie_GSoC_2026.ipynb  # Tasks 1–2 (AE, DGCNN)
+│   ├── ML4SCI_Task3_NonLocal_GNN.ipynb # Task 3 (Non-local vs Local GNN)
 │   ├── models/                        # Trained model weights
 │   │   ├── ae_model_best.pt
 │   │   ├── gnn_model_best.pt
@@ -83,15 +82,15 @@ The notebooks expect data at `data/quark-gluon_data-set_n139306.hdf5`. If unavai
 
 ### Running the Notebooks
 
-**Task 1–3 (Common Tasks + DDPM):**
+**Task 1–2 (Common Tasks):**
 ```bash
 cd notebooks
 jupyter notebook ML4SCI_Genie_GSoC_2026.ipynb
 ```
 
-**Task 4 (Non-local GNN):**
+**Task 3 (Non-local GNN):**
 ```bash
-jupyter notebook ML4SCI_Task4_NonLocal_GNN.ipynb
+jupyter notebook ML4SCI_Task3_NonLocal_GNN.ipynb
 ```
 
 Both notebooks are **self-contained** and will:
@@ -141,24 +140,7 @@ Both notebooks are **self-contained** and will:
 
 ---
 
-### Task 3: Denoising Diffusion Probabilistic Model (DDPM)
-
-**Architecture:**
-- **Type:** U-Net with sinusoidal positional embeddings
-- **Timesteps:** T=1000 (β_min=1e-4, β_max=0.02)
-- **Components:** Encoder (4 levels) → Bottleneck → Decoder with skip connections
-- **Time conditioning:** Sinusoidal PE + linear projection to all conv blocks
-- **Loss:** MSE(ε_true, ε_predicted)
-
-**Performance:**
-- **Reconstruction MSE (mean±std):** 0.0045 ± 0.0023
-- **Reconstruction SSIM:** 0.852 ± 0.039
-- **FID-like score (latent space):** ~0.35–0.45
-- **Training:** 30 epochs with cosine LR schedule
-
----
-
-### Task 4: Non-local GNN (Graph Transformer + Virtual Node)
+### Task 3: Non-local GNN (Graph Transformer + Virtual Node)
 
 **Architecture:**
 - **Input:** 7-dim node features [η, φ, E_ecal, E_hcal, E_track, dR, track_frac]
@@ -213,13 +195,12 @@ Graph transformers capture these patterns via learned attention, enabling the mo
 |------|-----------|----|----|--------|-------|
 | Task 1 (AE) | Adam | 1e-3 | — | 3 | 64 |
 | Task 2 (DGCNN) | Adam | 3e-4 | 1e-4 | 20–30 | 32 |
-| Task 3 (DDPM) | Adam | 2e-4 | — | 30 | 64 |
-| Task 4 (Non-local) | Adam | 2e-4 | 1e-4 | 25 | 32 |
+| Task 3 (Non-local) | Adam | 2e-4 | 1e-4 | 25 | 32 |
 
 ### Scheduling
 
-- **Tasks 1, 3:** CosineAnnealingLR (T_max = num_epochs)
-- **Tasks 2, 4:** ReduceLROnPlateau (mode='max', factor=0.5, patience=3–4)
+- **Task 1:** CosineAnnealingLR (T_max = num_epochs)
+- **Tasks 2, 3:** ReduceLROnPlateau (mode='max', factor=0.5, patience=3–4)
 
 ---
 
@@ -232,8 +213,8 @@ All output images are saved to `notebooks/`:
 - **`ae_comparison.png`** — Original vs reconstructed jets (4 examples, all channels)
 - **`jet_graph.png`** — Single jet as graph visualization (nodes=energy, edges=k-NN)
 - **`gnn_performance.png`** — DGCNN ROC, confusion matrix, loss curves
-- **`task4_comparison.png`** — 8-panel comprehensive comparison (baseline vs non-local)
-- **`task4_attention.png`** — Attention weight heatmaps for quark & gluon events
+- **`task3_comparison.png`** — 8-panel comprehensive comparison (baseline vs non-local)
+- **`task3_attention.png`** — Attention weight heatmaps for quark & gluon events
 
 ---
 
@@ -246,8 +227,7 @@ Trained weights are saved in `notebooks/models/`:
 ```
 ae_model_best.pt          # Task 1 best weights
 gnn_model_best.pt         # Task 2 best weights
-nonlocal_gnn_best.pt      # Task 4 best weights
-(ddpm saved inline, not checkpoint structure)
+nonlocal_gnn_best.pt      # Task 3 best weights
 ```
 
 ### How to Load
@@ -260,11 +240,11 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 ae_model = ConvAE(latent_dim=256).to(device)
 ae_model.load_state_dict(torch.load('notebooks/models/ae_model_best.pt', map_location=device))
 
-# DGCNN
-dgcnn = BaselineDGCNN(node_feat=7, num_classes=2, k=16).to(device)
+# DGCNN (Task 2)
+dgcnn = DGCNN_Dynamic(node_feat=5, num_classes=2, k=16).to(device)
 dgcnn.load_state_dict(torch.load('notebooks/models/gnn_model_best.pt', map_location=device))
 
-# Non-local GNN
+# Non-local GNN (Task 3)
 nl_gnn = NonLocalGNN(node_feat=7, edge_feat=4, d_model=128, n_heads=8, num_layers=3).to(device)
 nl_gnn.load_state_dict(torch.load('notebooks/models/nonlocal_gnn_best.pt', map_location=device))
 ```
@@ -295,13 +275,11 @@ nl_gnn.load_state_dict(torch.load('notebooks/models/nonlocal_gnn_best.pt', map_l
 
 1. **Data:** Uses only 3 channels (ECAL, HCAL, Tracks) — real ML4SCI includes additional features
 2. **Synthetic fallback:** Simplified data generation doesn't capture full physics; real dataset recommended
-3. **Task 3 (DDPM):** Generative quality limited by image resolution (125×125 is small); results are functional but noisy
-4. **Task 4 scalability:** Non-local GNN O(N²) attention — prohibitive for very large graphs (but ~50 nodes/jet is fine)
+3. **Task 3 scalability:** Non-local GNN O(N²) attention — prohibitive for very large graphs (but ~50 nodes/jet is fine)
 
 **Future Improvements:**
 - Jet constituent-level features (pt, η, φ, mass, charge) instead of image pixels
 - Transformer scaling tricks (efficient attention, sparse attention patterns)
-- Conditional diffusion for physics-guided generation
 - Ensemble methods combining local + non-local predictions
 
 ---
