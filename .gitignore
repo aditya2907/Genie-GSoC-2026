@@ -1,0 +1,40 @@
+# Jupyter Notebook
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.env
+
+# Large data files
+*.h5
+*.hdf5
+*.pt
+*.pth
+*.pkl
+*.pickle
+
+# Model checkpoints
+model/
+models/
+checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
